@@ -17,44 +17,46 @@ using Double = double;
 using Float = float;
 using Char = int32_t;
 using Byte = uint8_t;
+using Unit = int32_t;
 
-template<typename T> using FixedArray = T*;
+constexpr Unit trivial = 0;
 
-template <typename T> using Ref = T*;
+template <typename T> using FixedArray = T *;
+
+template <typename T> using Ref = T *;
 
 template <typename T, std::constructible_from<T>... Args>
 Ref<T> from_cxx(Args &&...args) noexcept {
-  auto obj = moonbit_make_external_object(
-      [](Ref<T> obj) { obj->~T(); }, sizeof(T));
+  auto obj =
+      moonbit_make_external_object([](Ref<T> obj) { obj->~T(); }, sizeof(T));
   return new (obj) T{std::forward<Args>(args)...};
 }
 
-template<typename T>
+template <typename T>
 concept moonbit_abi = std::is_pointer_v<T> || std::is_arithmetic_v<T>;
 
-template<moonbit_abi T> 
-void decref(T obj) noexcept {
+template <moonbit_abi T> void decref(T obj) noexcept {
   if constexpr (std::is_pointer_v<T>) {
     moonbit_decref(obj); // this is unsafe
   }
 }
 
-template<moonbit_abi T> 
-void incref(T obj) noexcept {
+template <moonbit_abi T> void incref(T obj) noexcept {
   if constexpr (std::is_pointer_v<T>) {
     moonbit_incref(obj); // this is unsafe
-  } 
+  }
 }
 
-template <moonbit_abi R, moonbit_abi...Args> 
-struct Closure {
-  using Self = Closure<R,Args...>;
-  R (*code)(Self* self,Args...args) noexcept;
+template <moonbit_abi R, moonbit_abi... Args> struct Closure {
+  using Self = Closure<R, Args...>;
+  R (*code)(Self *self, Args... args) noexcept;
 
-  R operator()(Args...args) noexcept { // do not use & or && here
-    moonbit_incref(code);
-    (... , incref(args));
-    return this->code(this,args...);
-  }  
+  R operator()(Args... args) noexcept { // do not use & or && here
+    moonbit_incref(this);
+    (..., incref(args));
+    return this->code(this, args...);
+  }
 };
-}
+
+#define fixedarray_length Moonbit_array_length
+} // namespace moonbit
