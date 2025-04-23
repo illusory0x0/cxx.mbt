@@ -1,0 +1,10 @@
+{
+  "is-main": true,
+  "warn-list": "-A",
+  "link": {
+    "native": {
+      "cc-flags": "-fsanitize=address -fsanitize=undefined",
+      "cc-link-flags": "-Lbuild -lstub -lstdc++"
+    }
+  }
+}
